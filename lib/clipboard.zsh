@@ -59,10 +59,13 @@ function detect-clipboard() {
     function clippaste() { cat /dev/clipboard; }
   elif (( $+commands[clip.exe] )) && (( $+commands[powershell.exe] )); then
     function clipcopy() { cat "${1:-/dev/stdin}" | clip.exe; }
-    function clippaste() { powershell.exe -noprofile -command Get-Clipboard; }
+    function clippaste() {
+      setopt localoptions pipefail
+      powershell.exe -noprofile -command Get-Clipboard | tr -d '\r'
+    }
   elif [ -n "${WAYLAND_DISPLAY:-}" ] && (( ${+commands[wl-copy]} )) && (( ${+commands[wl-paste]} )); then
     function clipcopy() { cat "${1:-/dev/stdin}" | wl-copy &>/dev/null &|; }
-    function clippaste() { wl-paste; }
+    function clippaste() { wl-paste --no-newline; }
   elif [ -n "${DISPLAY:-}" ] && (( ${+commands[xsel]} )); then
     function clipcopy() { cat "${1:-/dev/stdin}" | xsel --clipboard --input; }
     function clippaste() { xsel --clipboard --output; }
@@ -82,7 +85,7 @@ function detect-clipboard() {
     function clipcopy() { cat "${1:-/dev/stdin}" | termux-clipboard-set; }
     function clippaste() { termux-clipboard-get; }
   elif [ -n "${TMUX:-}" ] && (( ${+commands[tmux]} )); then
-    function clipcopy() { tmux load-buffer "${1:--}"; }
+    function clipcopy() { tmux load-buffer -w "${1:--}"; }
     function clippaste() { tmux save-buffer -; }
   else
     function _retry_clipboard_detection_or_fail() {

@@ -1,31 +1,45 @@
-local -a _git_commit_aliases
-_git_commit_aliases=(
-  'build'
-  'chore'
-  'ci'
-  'docs'
-  'feat'
-  'fix'
-  'perf'
-  'refactor'
-  'revert'
-  'style'
-  'test'
-)
+# Add git-commit commands directory to path
+0="${${ZERO:-${0:#$ZSH_ARGZERO}}:-${(%):-%N}}"
+0="${${(M)0:#/*}:-$PWD/$0}"
+path=("${0:a:h}/git-commands" $path)
 
-local alias type
-for type in "${_git_commit_aliases[@]}"; do
-  # an alias can't be named "revert" because the git command takes precedence
-  # https://stackoverflow.com/a/3538791
-  case "$type" in
-  revert) alias=rev ;;
-  *) alias=$type ;;
-  esac
+# Append completions for custom git commands
+() {
+  local -a git_user_commands
+  zstyle -a ':completion:*:*:git:*' user-commands 'git_user_commands' \
+    || git_user_commands=()
+  git_user_commands+=(
+    build:'Commit with a message indicating a build' \
+    chore:'Commit with a message indicating a chore' \
+    ci:'Commit with a message indicating a CI change' \
+    docs:'Commit with a message indicating an update to the documentation' \
+    feat:'Commit with a message indicating a feature' \
+    fix:'Commit with a message indicating a fix' \
+    perf:'Commit with a message indicating a performance enhancement' \
+    refactor:'Commit with a message indicating a refactor' \
+    rev:'Commit with a message indicating a revert' \
+    style:'Commit with a message indicating a style change' \
+    test:'Commit with a message indicating updates to tests' \
+    wip:'Commit with a message indicating a work in progress'
+  )
+  zstyle ':completion:*:*:git:*' user-commands "${git_user_commands[@]}"
+}
 
-  local func='!a() { if [ "$1" = "-s" ] || [ "$1" = "--scope" ]; then local scope="$2"; shift 2; git commit -m "'$type'(${scope}): ${@}"; else git commit -m "'$type': ${@}"; fi }; a'
-  if ! git config --global --get-all alias.${alias} >/dev/null 2>&1; then
-    git config --global alias.${alias} "$func"
-  fi
-done
-
-unset _git_commit_aliases alias type func
+# Clean up aliases from the prior implementation of git-commit. Keep this migration
+# for users upgrading from versions that still wrote aliases to .gitconfig.
+() {
+  git config --global --get oh-my-zsh.git-commit-alias &> /dev/null || return 0
+  local -a old_git_aliases=(
+    'build'  'chore'     'ci'
+    'docs'   'feat'      'fix'
+    'perf'   'refactor'  'rev'
+    'style'  'test'      'wip'
+  )
+  local git_alias
+  for git_alias in $old_git_aliases; do
+    if [[ "$(git config --global --get alias.$git_alias | tr '\n' ' ')" == "!a() { local _scope _attention _message"* ]]; then
+      git config --global --unset alias.$git_alias
+    fi
+  done
+  git config --global --unset oh-my-zsh.git-commit-alias
+}

@@ -62,6 +62,8 @@ alias mvncp='mvn clean package'
 alias mvnct='mvn clean test'
 alias mvncv='mvn clean verify'
 alias mvncvst='mvn clean verify -DskipTests'
+alias mvnv='mvn verify'
+alias mvnvst='mvn verify -DskipTests'
 alias mvndp='mvn deploy'
 alias mvndocs='mvn dependency:resolve -Dclassifier=javadoc'
 alias mvndt='mvn dependency:tree'
@@ -101,8 +103,14 @@ function listMavenCompletions {
       new_file="../pom.xml"
     fi
 
-    # if file doesn't exist break
     file="${file:h}/${new_file}"
+
+    # if the file points to a directory, assume it is a pom.xml in that directory
+    if [[ -d "$file" ]]; then
+      file="${file}/pom.xml"
+    fi
+
+    # if file doesn't exist break
     if ! [[ -e "$file" ]]; then
       break
     fi
@@ -339,6 +347,13 @@ function listMavenCompletions {
   )
 }
 
-compctl -K listMavenCompletions mvn mvnw
-compctl -K listMavenCompletions mvn-color
-compctl -K listMavenCompletions mvn-or-mvnw
+# Completion, via compsys so that tools built on it (fzf-tab, etc.) can take over.
+_mvn() {
+  local -a commands
+  listMavenCompletions
+  # _describe splits entries on `:`, so escape it to keep goals like `dependency:tree`.
+  commands=("${(@)reply//:/\\:}")
+  _describe -t mvn-commands 'mvn command' commands
+}
+
+compdef _mvn mvn mvnw mvn-color mvn-or-mvnw

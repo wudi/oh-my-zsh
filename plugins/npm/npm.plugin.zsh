@@ -32,7 +32,7 @@ alias npmF='npm i -f'
 
 # Execute command from node_modules folder based on current directory
 # i.e npmE gulp
-alias npmE='PATH="$(npm bin)":"$PATH"'
+alias npmE='PATH="$(npm root)/.bin":"$PATH"'
 
 # Check which npm modules are outdated
 alias npmO="npm outdated"
@@ -58,7 +58,7 @@ alias npmt="npm test"
 # Run npm scripts
 alias npmR="npm run"
 
-# Run npm publish 
+# Run npm publish
 alias npmP="npm publish"
 
 # Run npm init
